@@ -1,0 +1,30 @@
+{
+  "name": "client",
+  "version": "1.0.0",
+  "description": "Client Application for Vision Dashboard",
+  "main": "index.js",
+  "dependencies": {
+    "command-exists": "^1.2.8",
+    "execa": "^1.0.0",
+    "ip": "^1.1.5",
+    "node-nmap": "^4.0.0",
+    "shell-exec": "^1.0.2",
+    "socket.io-client": "^2.2.0",
+    "systeminformation": "^4.1.4"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@gitlab.com/audoeyop/cloudclient.git"
+  },
+  "keywords": [],
+  "author": "Akaninyene Udoeyop <akan@visionlabs.tech> (http://akaninyene.com)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://gitlab.com/audoeyop/cloudclient/issues"
+  },
+  "homepage": "https://gitlab.com/audoeyop/cloudclient#readme"
+}
