@@ -27,9 +27,11 @@ vision-admin -t <device_token>
 ```
 
 ## Enjoy
-Monitor your system's performance in real-time. Also, with Google Map's API and IP2Location IP-Geolocation database integration, view a real-time map of your device's active network connections.
-
+Monitor your system's performance in real-time.
 ![](assets/overview.jpg)
+
+With Google Map's API and IP2Location's IP-Geolocation database integration, view a real-time map of your device's active network connections. This includes city, region, country, longitude, and longitude information.
+![](assets/geolocation.jpg)
 
 View your device's network interface & connection data.
 ![](assets/network.jpg)
