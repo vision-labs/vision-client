@@ -22,6 +22,7 @@ Copy you device's token.
 
 ## Usage
 
+From the command-line, run the following command with the device token that you copied from the web application.
 ```
 vision-client -t <device_token>
 ```
