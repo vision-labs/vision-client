@@ -7,7 +7,7 @@
 // node index.js -t <device_token>
 // node index.js -u <user_token> -o <organization_token> -n <name> -d <device_type>
 
-var cli_server = 'http://localhost:3001'
+var cli_server = 'http://visionadministrator.com:3001'
 
 var si = require('systeminformation');
 
@@ -374,6 +374,7 @@ exports.connect = function(server, token) {
 
       var dir = JSON.parse(data).data;
 
+
       fs.readdir(dir, function(err, files) {
 
           dir_output.directory = dir;
@@ -382,15 +383,24 @@ exports.connect = function(server, token) {
 
           for (var file in files) {
 
-            var stats = fs.statSync(dir + files[file])
+            try {
 
-            dir_output.files.push({
-              name: files[file],
-              directory: stats.isDirectory(),
-              size: stats.size,
-              create_date: parseInt(stats['ctimeMs']),
-              modified_date: parseInt(stats['mtimeMs'])
-            })
+              var stats = fs.statSync(dir + files[file])
+
+              dir_output.files.push({
+                name: files[file],
+                directory: stats.isDirectory(),
+                size: stats.size,
+                create_date: parseInt(stats['ctimeMs']),
+                modified_date: parseInt(stats['mtimeMs'])
+              })
+
+            } catch (e) {
+              dir_output.files.push({
+                name: files[file],
+                error: e,
+              })
+            }
           }
 
           exports.socket.emit('action_output', JSON.stringify({action: 'directory', data: dir_output}));

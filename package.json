@@ -1,7 +1,7 @@
 {
-  "name": "client",
+  "name": "vision-client",
   "version": "1.0.0",
-  "description": "Client Application for Vision Dashboard",
+  "description": "Client for Vision Admin platform",
   "main": "index.js",
   "dependencies": {
     "command-exists": "^1.2.8",
@@ -16,15 +16,19 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "bin": {
+    "vision-client": "./bin/vision-client.js"
+  },
+  "preferGlobal": true,
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@gitlab.com/audoeyop/cloudclient.git"
+    "url": "git+ssh://git@gitlab.com:cloud-admin/client.git"
   },
   "keywords": [],
   "author": "Akaninyene Udoeyop <akan@visionlabs.tech> (http://akaninyene.com)",
   "license": "ISC",
   "bugs": {
-    "url": "https://gitlab.com/audoeyop/cloudclient/issues"
+    "url": "https://gitlab.com/cloud-admin/client/issues"
   },
-  "homepage": "https://gitlab.com/audoeyop/cloudclient#readme"
+  "homepage": "https://gitlab.com/cloud-admin/client#readme"
 }
