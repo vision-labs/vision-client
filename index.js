@@ -1,5 +1,5 @@
 // Vision Client
-// Description: Client comanion for Vision Admin
+// Description: Client companion for Vision Admin platform
 // ==
 
 // Usage
