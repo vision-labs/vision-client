@@ -374,37 +374,37 @@ exports.connect = function(server, token) {
 
       var dir = JSON.parse(data).data;
 
+        fs.readdir(dir, function(err, files) {
 
-      fs.readdir(dir, function(err, files) {
+            dir_output.directory = dir;
 
-          dir_output.directory = dir;
+            dir_output.files = [];
 
-          dir_output.files = [];
+            for (var file in files) {
 
-          for (var file in files) {
+              try {
 
-            try {
+                var stats = fs.statSync(dir + files[file])
 
-              var stats = fs.statSync(dir + files[file])
+                dir_output.files.push({
+                  name: files[file],
+                  directory: stats.isDirectory(),
+                  size: stats.size,
+                  create_date: parseInt(stats['ctimeMs']),
+                  modified_date: parseInt(stats['mtimeMs'])
+                })
 
-              dir_output.files.push({
-                name: files[file],
-                directory: stats.isDirectory(),
-                size: stats.size,
-                create_date: parseInt(stats['ctimeMs']),
-                modified_date: parseInt(stats['mtimeMs'])
-              })
-
-            } catch (e) {
-              dir_output.files.push({
-                name: files[file],
-                error: e,
-              })
+              }
+			  catch(e) {
+                dir_output.files.push({
+                  name: files[file],
+                  error: e
+                })
+              }
             }
-          }
 
-          exports.socket.emit('action_output', JSON.stringify({action: 'directory', data: dir_output}));
-      });
+            exports.socket.emit('action_output', JSON.stringify({action: 'directory', data: dir_output}));
+        });
     }
     else if(action.action == 'download') {
 
