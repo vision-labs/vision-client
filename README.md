@@ -23,7 +23,7 @@ Copy you device's token.
 ## Usage
 
 ```
-vision-admin -t <device_token>
+vision-client -t <device_token>
 ```
 
 ## Enjoy
