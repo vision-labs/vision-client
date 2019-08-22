@@ -5,7 +5,7 @@
 ## Install Vision Client
 
 ```bash
-npm i -g vision-admin
+npm i -g vision-client
 ```
 
 ## Setup
