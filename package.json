@@ -24,7 +24,14 @@
     "type": "git",
     "url": "git+ssh://git@gitlab.com:cloud-admin/client.git"
   },
-  "keywords": [],
+  "keywords": [
+    "monitor",
+    "server",
+    "sysadmin",
+    "automated",
+    "remote",
+    "incident"
+  ],
   "author": "Akaninyene Udoeyop <akan@visionlabs.tech> (http://akaninyene.com)",
   "license": "ISC",
   "bugs": {
