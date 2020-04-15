@@ -45,6 +45,10 @@ var d1;
 
 var d2;
 
+var client_version;
+
+var package_info = require('./package.json');
+
 process.argv.forEach(function(arg, index) {
 
   switch(arg) {
@@ -149,6 +153,8 @@ exports.connect = function(server, token) {
       exports.socket.emit('add_device', token);
     }
     else {
+
+      token.package_version = package_info.version;
 
       exports.socket.emit('room', token);
 
@@ -301,7 +307,25 @@ exports.connect = function(server, token) {
 
         shellExec(command.data.command, {cwd: command.data.path}).then(function(output){
 
-          exports.socket.emit('action_output', JSON.stringify({action: 'command', data: output}));
+          var max_length = 64535;
+
+          var truncate = false;
+
+          if (output.stdout.length > max_length) {
+
+            truncate = true;
+
+            output.stdout = output.stdout.substring(0, max_length - 1);
+          }
+
+          if (output.stderr.length > max_length) {
+
+            truncate = true;
+
+            output.stderr = output.stderr.substring(0, max_length - 1);
+          }
+
+          exports.socket.emit('action_output', JSON.stringify({action: 'command', data: output, truncate: truncate}));
 
         }).catch(function(output){
           // error handler - we havn't been able to triggor this handler
@@ -673,4 +697,4 @@ exports.connect = function(server, token) {
   });
 };
 
-exports.connect(cli_server, {cli_token: cli_token, user_token: user_token, org_token: org_token, name: name, type: type});
+exports.connect(cli_server, {cli_token: cli_token, user_token: user_token, org_token: org_token, name: name, type: type, client_version: client_version});
