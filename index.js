@@ -508,122 +508,131 @@ exports.connect = function(server, token) {
 
       d1 = new Date();
 
-      si.users(function(usersData) {
+      si.memLayout(function(memLayoutData) {
 
-        console.log('users: ' + (((new Date()) - d1)/1000) + 'seconds');
+        console.log('memLayout: ' + (((new Date()) - d1)/1000) + 'seconds');
 
-        output.users = usersData;
+        output.memLayout = memLayoutData;
 
         d1 = new Date();
 
-        si.networkConnections(function(networkConnectionsData) {
+        si.users(function(usersData) {
 
-          console.log('networkConnections: ' + (((new Date()) - d1)/1000) + 'seconds');
+          console.log('users: ' + (((new Date()) - d1)/1000) + 'seconds');
 
-          output.networkConnections = networkConnectionsData;
+          output.users = usersData;
 
           d1 = new Date();
 
-          si.currentLoad(function(currentLoadData) {
+          si.networkConnections(function(networkConnectionsData) {
 
-            console.log('currentLoad: ' + (((new Date()) - d1)/1000) + 'seconds');
+            console.log('networkConnections: ' + (((new Date()) - d1)/1000) + 'seconds');
 
-            output.currentLoad = currentLoadData;
+            output.networkConnections = networkConnectionsData;
 
             d1 = new Date();
 
-            si.services('postgresql, mysql, apache2, nginx, sshd', function(servicesData) {
+            si.currentLoad(function(currentLoadData) {
 
-              console.log('services: ' + (((new Date()) - d1)/1000) + 'seconds');
+              console.log('currentLoad: ' + (((new Date()) - d1)/1000) + 'seconds');
 
-              output.services = servicesData;
+              output.currentLoad = currentLoadData;
 
               d1 = new Date();
 
-              si.processes(function(processesData) {
+              si.services('postgresql, mysql, apache2, nginx, sshd', function(servicesData) {
 
-                console.log('processes: ' + (((new Date()) - d1)/1000) + 'seconds');
+                console.log('services: ' + (((new Date()) - d1)/1000) + 'seconds');
 
-                output.processes = processesData;
+                output.services = servicesData;
 
-                // Breaks if host does not have docker installed
-                // ====
-                //
-                // d1 = new Date();
-                //
-                // si.dockerContainers(function(dockerContainersData) {
-                //
-                //   console.log('dockerContainers: ' + (((new Date()) - d1)/1000) + 'seconds');
-                //
-                //   output.dockerContainers = dockerContainersData;
+                d1 = new Date();
 
-                  d1 = new Date();
+                si.processes(function(processesData) {
 
-                  si.fsSize(function(fsSizeData) {
+                  console.log('processes: ' + (((new Date()) - d1)/1000) + 'seconds');
 
-                    console.log('fsSize: ' + (((new Date()) - d1)/1000) + 'seconds');
+                  output.processes = processesData;
 
-                    output.fsSize = fsSizeData;
+                  // Breaks if host does not have docker installed
+                  // ====
+                  //
+                  // d1 = new Date();
+                  //
+                  // si.dockerContainers(function(dockerContainersData) {
+                  //
+                  //   console.log('dockerContainers: ' + (((new Date()) - d1)/1000) + 'seconds');
+                  //
+                  //   output.dockerContainers = dockerContainersData;
 
                     d1 = new Date();
 
-                    fs.readdir(home_directory, function(err, files) {
+                    si.fsSize(function(fsSizeData) {
 
-                      console.log('readdir: ' + (((new Date()) - d1)/1000) + 'seconds');
+                      console.log('fsSize: ' + (((new Date()) - d1)/1000) + 'seconds');
 
-                      output.directory = home_directory;
-
-                      output.files = [];
-
-                      for (var file in files) {
-
-                        output.files.push({
-                          name: files[file],
-                          directory: fs.statSync(home_directory + files[file]).isDirectory()
-                        })
-                      }
+                      output.fsSize = fsSizeData;
 
                       d1 = new Date();
 
-                      si.getStaticData(function(getStaticData) {
+                      fs.readdir(home_directory, function(err, files) {
 
-                        console.log('getStaticData: ' + (((new Date()) - d1)/1000) + 'seconds');
+                        console.log('readdir: ' + (((new Date()) - d1)/1000) + 'seconds');
 
-                        output.getStaticData = getStaticData;
+                        output.directory = home_directory;
+
+                        output.files = [];
+
+                        for (var file in files) {
+
+                          output.files.push({
+                            name: files[file],
+                            directory: fs.statSync(home_directory + files[file]).isDirectory()
+                          })
+                        }
 
                         d1 = new Date();
 
-                        var network_interfaces = os.networkInterfaces();
+                        si.getStaticData(function(getStaticData) {
 
-                        Object.keys(network_interfaces).forEach(function(interface) {
+                          console.log('getStaticData: ' + (((new Date()) - d1)/1000) + 'seconds');
 
-                          var addresses = network_interfaces[interface];
+                          output.getStaticData = getStaticData;
 
-                          if(addresses) {
+                          d1 = new Date();
 
-                            addresses.forEach(function(address) {
+                          var network_interfaces = os.networkInterfaces();
 
-                              address.networkAddress = ip.subnet(address.address, address.netmask);
+                          Object.keys(network_interfaces).forEach(function(interface) {
 
-                              address.subnetMaskLength = address.subnetMaskLength;
+                            var addresses = network_interfaces[interface];
 
-                              address.interfaceName = interface;
-                            });
+                            if(addresses) {
+
+                              addresses.forEach(function(address) {
+
+                                address.networkAddress = ip.subnet(address.address, address.netmask);
+
+                                address.subnetMaskLength = address.subnetMaskLength;
+
+                                address.interfaceName = interface;
+                              });
+                            };
+                          });
+
+                          output.networkInterfaces = network_interfaces;
+
+                          console.log('systeminfo_output: ' + data);
+
+                          if(exports.socket){
+
+                            exports.socket.emit('systeminfo_output', output);
                           };
                         });
-
-                        output.networkInterfaces = network_interfaces;
-
-                        console.log('systeminfo_output: ' + data);
-
-                        if(exports.socket){
-
-                          exports.socket.emit('systeminfo_output', output);
-                        };
                       });
                     });
-                  });
-                // }); // docker
+                  // }); // docker
+                });
               });
             });
           });
