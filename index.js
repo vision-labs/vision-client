@@ -25,6 +25,8 @@ var commandExists = require('command-exists');
 
 var execa = require('execa');
 
+var shell = require('shelljs');
+
 var home_directory = os.homedir() + '/';
 
 var cli_token = "";
@@ -46,6 +48,8 @@ var d1;
 var d2;
 
 var client_version;
+
+var device_info = null;
 
 var package_info = require('./package.json');
 
@@ -383,13 +387,16 @@ exports.connect = function(server, token) {
 
       if (!isDirectory) {
 
-        var fileContents = fs.readFileSync(file.data);
+        if (fs.existsSync(file.data)) {
 
-        var base64EncodedContent = new Buffer(fileContents).toString('base64');
+          var fileContents = fs.readFileSync(file.data);
 
-        // TODO: limit based on file size at some point
+          var base64EncodedContent = new Buffer(fileContents).toString('base64');
 
-        exports.socket.emit('action_output', JSON.stringify({action: 'command', data: base64EncodedContent}));
+          // TODO: limit based on file size at some point
+
+          exports.socket.emit('action_output', JSON.stringify({action: 'command', data: base64EncodedContent}));
+        };
       };
     }
     else if(action.action == 'directory') {
@@ -473,8 +480,6 @@ exports.connect = function(server, token) {
 
           var stats = fs.statSync(home_directory + files[file])
 
-          console.log(stats)
-
           output.files.push({
             name: files[file],
             directory: stats.isDirectory(),
@@ -492,6 +497,427 @@ exports.connect = function(server, token) {
     };
   });
 
+  exports.socket.on('update_device_info', function(data){
+
+    // TODO: valid JSON check
+
+    device_info = JSON.parse(data);
+
+    // console.log(device_info.rule_assignments);
+
+    device_info.rule_assignments.forEach(function(rule_assignment){
+
+      // rule.filepath
+      // rule.equalcontain
+      // rule.value
+
+      if(rule_assignment.rule){
+
+        var rule = rule_assignment.rule
+
+        if(rule.ruletype == "file"){
+
+          rule_assignment.status = "good";
+
+          var summary = '';
+
+          var permission_summary = '';
+
+          if (fs.existsSync(rule.filepath)) {
+
+            const file_fd = fs.openSync(rule.filepath, 'r');
+
+            stats = fs.fstatSync(file_fd);
+
+            fs.closeSync(file_fd);
+
+            // if (error) {
+            //
+            //   console.log(error);
+            //
+            //   rule_assignment.error = rule.filepath + ": " + error;
+            // }
+            // else {
+
+            var permission_check = true;
+
+            var actual_permission = null;
+
+            var file_content_violated = false;
+
+            rule.permission = JSON.parse(rule.permission);
+
+            if(rule.permission.enable){
+
+              var permission = (stats.mode & parseInt('0777', 8)).toString(8);
+
+              permission = permission.toString();
+
+              var user_permission = parseInt(permission[0]);
+
+              var group_permission = parseInt(permission[1]);
+
+              var other_permission = parseInt(permission[2]);
+
+              actual_permission = {user: {read: null, write: null, execute: null},
+                                       group: {read: null, write: null, execute: null},
+                                       other: {read: null, write: null, execute: null}}
+
+
+              // define permission sets
+
+              var read_permissions = [7,6,5,4];
+
+              var write_permissions = [7,6,3,2];
+
+              var execute_permissions = [7,5,3,1];
+
+
+              // set actual permissions
+
+              if(read_permissions.includes(user_permission)){
+
+                actual_permission.user.read = true
+              }else {
+
+                actual_permission.user.read = false
+              }
+
+              if(write_permissions.includes(user_permission)){
+
+                actual_permission.user.write = true
+              }else {
+
+                actual_permission.user.write = false
+              }
+
+              if(execute_permissions.includes(user_permission)){
+
+                actual_permission.user.execute = true
+              }else {
+
+                actual_permission.user.execute = false
+              }
+
+              if(read_permissions.includes(group_permission)){
+
+                actual_permission.group.read = true
+              }else {
+
+                actual_permission.group.read = false
+              }
+
+              if(write_permissions.includes(group_permission)){
+
+                actual_permission.group.write = true
+              }else {
+
+                actual_permission.group.write = false
+              }
+
+              if(execute_permissions.includes(group_permission)){
+
+                actual_permission.group.execute = true
+              }else {
+
+                actual_permission.group.execute = false
+              }
+
+              if(read_permissions.includes(other_permission)){
+
+                actual_permission.other.read = true
+
+              }else {
+
+                actual_permission.other.read = false
+              }
+
+              if(write_permissions.includes(other_permission)){
+
+                actual_permission.other.write = true
+
+              }else {
+
+                actual_permission.other.write = false
+              }
+
+              if(execute_permissions.includes(other_permission)){
+
+                actual_permission.other.execute = true
+
+              }else {
+
+                actual_permission.other.execute = false
+              }
+
+
+              // perform parmission check
+
+              if(rule.permission.user.read && !read_permissions.includes(user_permission)){
+
+                permission_check = false;
+              }
+              else if(!rule.permission.user.read && read_permissions.includes(user_permission)){
+
+                permission_check = false;
+              }
+              else if(rule.permission.user.write && !write_permissions.includes(user_permission)){
+
+                permission_check = false;
+              }
+              else if(!rule.permission.user.write && write_permissions.includes(user_permission)){
+
+                permission_check = false;
+              }
+              else if(rule.permission.user.execute && !execute_permissions.includes(user_permission)){
+
+                permission_check = false;
+              }
+              else if(!rule.permission.user.execute && execute_permissions.includes(user_permission)){
+
+                permission_check = false;
+              }
+              else if(rule.permission.group.read && !read_permissions.includes(group_permission)){
+
+                permission_check = false;
+              }
+              else if(!rule.permission.group.read && read_permissions.includes(group_permission)){
+
+                permission_check = false;
+              }
+              else if(rule.permission.group.write && !write_permissions.includes(group_permission)){
+
+                permission_check = false;
+              }
+              else if(!rule.permission.group.write && write_permissions.includes(group_permission)){
+
+                permission_check = false;
+              }
+              else if(rule.permission.group.execute && !execute_permissions.includes(group_permission)){
+
+                permission_check = false;
+              }
+              else if(!rule.permission.other.execute && execute_permissions.includes(other_permission)){
+
+                permission_check = false;
+              }
+              else if(!rule.permission.other.read && read_permissions.includes(other_permission)){
+
+                permission_check = false;
+              }
+              else if(rule.permission.other.write && !write_permissions.includes(other_permission)){
+
+                permission_check = false;
+              }
+              else if(!rule.permission.other.write && write_permissions.includes(other_permission)){
+
+                permission_check = false;
+              }
+              else if(rule.permission.other.execute && !execute_permissions.includes(other_permission)){
+
+                permission_check = false;
+              }
+              else if(!rule.permission.other.execute && execute_permissions.includes(other_permission)){
+
+                permission_check = false;
+              };
+            };
+
+            if(!permission_check) {
+
+              rule_assignment.status = "violated"
+
+              permission_summary = "\nviolation: Permission Check Failed\n==========\nExpected Permission:\n" + JSON.stringify(rule.permission) + "\n==========\nActual Permission:\n" + JSON.stringify(actual_permission) + "\n\n";
+
+              summary = summary + permission_summary;
+            }
+
+            var item = null;
+
+            if(rule.equalcontain == "should equal" || rule.equalcontain == "should not equal"){
+
+              var buffer = fs.readFileSync(rule.filepath);
+
+              var fileContent = buffer.toString();
+
+              item = fileContent;
+
+              if(rule.equalcontain == "should equal" && fileContent == rule.value){
+
+                // do nothing
+              }
+              else if(rule.equalcontain == "should equal" && fileContent != rule.value){
+
+                rule_assignment.status = "violated";
+
+                file_content_violated = true;
+              }
+              else if(rule.equalcontain == "should not equal" && fileContent == rule.value){
+
+                rule_assignment.status = "violated";
+
+                file_content_violated = true;
+              }
+              else if(rule.equalcontain == "should not equal" && fileContent != rule.value){
+
+                // do nothing
+              }
+
+            }
+
+            else if(rule.equalcontain == "should contain" || rule.equalcontain == "should not contain"){
+
+              var grep = shell.grep(rule.value,  rule.filepath);
+
+              var grep_items = grep.trim().split("\n");
+
+              item = grep_items;
+
+              var contains = false;
+
+              grep_items.forEach(function(item){
+
+                if(item.includes(rule.value)){
+
+                  contains = true;
+                }
+              })
+
+              if(rule.equalcontain == "should contain" && contains){
+
+                // do nothing
+              }
+              else if(rule.equalcontain == "should contain" && !contains){
+
+                rule_assignment.status = "violated"
+
+                file_content_violated = true;
+              }
+              else if(rule.equalcontain == "should not contain" && contains){
+
+                rule_assignment.status = "violated"
+
+                file_content_violated = true;
+              }
+              else if(rule.equalcontain == "should not contain" && !contains){
+
+                // do nothing
+              }
+            }
+
+            if(rule.equalcontain && file_content_violated) {
+
+              summary = summary + rule.filepath + " " + rule.equalcontain + "\nValue\n==========\n" + rule.value + "\n==========\nActual\n==========\n" + item + "\n";
+            }
+
+            if(rule_assignment.status != "good") {
+
+              if(rule_assignment.error) {
+
+                rule_assignment.log = "violation: error:" + rule_assignment.error
+              }
+              else {
+
+                rule_assignment.log = "violation: " + rule.filepath + summary;
+              }
+            }
+            else {
+
+              // status is good -- do nothing
+            }
+          }
+          else {
+
+            console.log(rule.filepath + " does not exist")
+
+            rule_assignment.error = rule.filepath + " does not exist";
+
+            rule_assignment.log = "violation: error:" + rule_assignment.error
+
+            rule_assignment.status = "violated";
+          }
+
+        }
+        else if(rule.ruletype == "command"){
+
+          var summary = '';
+
+          var output = shell.exec(rule.command);
+
+          if(!output){
+
+            output = '';
+          }
+
+          if(output.stderr){
+
+            output = output + output.stderr;
+          }
+
+          // rule.command
+          // rule.equalcontain
+          // rule.value
+
+          if(rule.equalcontain == "should equal" && output == rule.value){
+
+            rule_assignment.status = "good";
+          }
+          else if(rule.equalcontain == "should equal" && output != rule.value){
+
+            rule_assignment.status = "violated";
+          }
+          else if(rule.equalcontain == "should not equal" && output == rule.value){
+
+            rule_assignment.status = "violated";
+          }
+          else if(rule.equalcontain == "should not equal" && output != rule.value){
+
+            rule_assignment.status = "good";
+          }
+          else if(rule.equalcontain == "should contain" && output.includes(rule.value)){
+
+            rule_assignment.status = "good"
+          }
+          else if(rule.equalcontain == "should contain" && !output.includes(rule.value)){
+
+            rule_assignment.status = "violated"
+          }
+          else if(rule.equalcontain == "should not contain" && output.includes(rule.value)){
+
+            rule_assignment.status = "violated"
+          }
+          else if(rule.equalcontain == "should not contain" && !output.includes(rule.value)){
+
+            rule_assignment.status = "good"
+          }
+
+          if(rule.equalcontain) {
+
+            summary = " " + rule.equalcontain + "\nValue\n==========\n" + rule.value + "\n==========\nActual\n==========\n" + output + "\n";
+          }
+
+          if(rule_assignment.status != "good") {
+
+            if(rule_assignment.error) {
+
+              rule_assignment.log = "violation: error:" + rule_assignment.error
+            }
+            else {
+
+              rule_assignment.log = "violation: " + rule.command + summary;
+            }
+          }
+          else {
+
+            // status is good -- do nothing
+          };
+        };
+      };
+    });
+
+    exports.socket.emit('send_updated_device_info', device_info);
+  });
+
   exports.socket.on('get_systeminfo', function(data){
 
     console.log('get_systeminfo: ' + data);
@@ -499,6 +925,10 @@ exports.connect = function(server, token) {
     var output = {}
 
     d1 = new Date();
+
+    var system_time = si.time();
+
+    output.time = system_time;
 
     si.mem(function(memData) {
 
@@ -508,131 +938,122 @@ exports.connect = function(server, token) {
 
       d1 = new Date();
 
-      si.memLayout(function(memLayoutData) {
+      si.users(function(usersData) {
 
-        console.log('memLayout: ' + (((new Date()) - d1)/1000) + 'seconds');
+        console.log('users: ' + (((new Date()) - d1)/1000) + 'seconds');
 
-        output.memLayout = memLayoutData;
+        output.users = usersData;
 
         d1 = new Date();
 
-        si.users(function(usersData) {
+        si.networkConnections(function(networkConnectionsData) {
 
-          console.log('users: ' + (((new Date()) - d1)/1000) + 'seconds');
+          console.log('networkConnections: ' + (((new Date()) - d1)/1000) + 'seconds');
 
-          output.users = usersData;
+          output.networkConnections = networkConnectionsData;
 
           d1 = new Date();
 
-          si.networkConnections(function(networkConnectionsData) {
+          si.currentLoad(function(currentLoadData) {
 
-            console.log('networkConnections: ' + (((new Date()) - d1)/1000) + 'seconds');
+            console.log('currentLoad: ' + (((new Date()) - d1)/1000) + 'seconds');
 
-            output.networkConnections = networkConnectionsData;
+            output.currentLoad = currentLoadData;
 
             d1 = new Date();
 
-            si.currentLoad(function(currentLoadData) {
+            si.services('postgresql, mysql, apache2, nginx, sshd', function(servicesData) {
 
-              console.log('currentLoad: ' + (((new Date()) - d1)/1000) + 'seconds');
+              console.log('services: ' + (((new Date()) - d1)/1000) + 'seconds');
 
-              output.currentLoad = currentLoadData;
+              output.services = servicesData;
 
               d1 = new Date();
 
-              si.services('postgresql, mysql, apache2, nginx, sshd', function(servicesData) {
+              si.processes(function(processesData) {
 
-                console.log('services: ' + (((new Date()) - d1)/1000) + 'seconds');
+                console.log('processes: ' + (((new Date()) - d1)/1000) + 'seconds');
 
-                output.services = servicesData;
+                output.processes = processesData;
 
-                d1 = new Date();
+                // Breaks if host does not have docker installed
+                // ====
+                //
+                // d1 = new Date();
+                //
+                // si.dockerContainers(function(dockerContainersData) {
+                //
+                //   console.log('dockerContainers: ' + (((new Date()) - d1)/1000) + 'seconds');
+                //
+                //   output.dockerContainers = dockerContainersData;
 
-                si.processes(function(processesData) {
+                  d1 = new Date();
 
-                  console.log('processes: ' + (((new Date()) - d1)/1000) + 'seconds');
+                  si.fsSize(function(fsSizeData) {
 
-                  output.processes = processesData;
+                    console.log('fsSize: ' + (((new Date()) - d1)/1000) + 'seconds');
 
-                  // Breaks if host does not have docker installed
-                  // ====
-                  //
-                  // d1 = new Date();
-                  //
-                  // si.dockerContainers(function(dockerContainersData) {
-                  //
-                  //   console.log('dockerContainers: ' + (((new Date()) - d1)/1000) + 'seconds');
-                  //
-                  //   output.dockerContainers = dockerContainersData;
+                    output.fsSize = fsSizeData;
 
                     d1 = new Date();
 
-                    si.fsSize(function(fsSizeData) {
+                    fs.readdir(home_directory, function(err, files) {
 
-                      console.log('fsSize: ' + (((new Date()) - d1)/1000) + 'seconds');
+                      console.log('readdir: ' + (((new Date()) - d1)/1000) + 'seconds');
 
-                      output.fsSize = fsSizeData;
+                      output.directory = home_directory;
+
+                      output.files = [];
+
+                      for (var file in files) {
+
+                        output.files.push({
+                          name: files[file],
+                          directory: fs.statSync(home_directory + files[file]).isDirectory()
+                        })
+                      }
 
                       d1 = new Date();
 
-                      fs.readdir(home_directory, function(err, files) {
+                      si.getStaticData(function(getStaticData) {
 
-                        console.log('readdir: ' + (((new Date()) - d1)/1000) + 'seconds');
+                        console.log('getStaticData: ' + (((new Date()) - d1)/1000) + 'seconds');
 
-                        output.directory = home_directory;
-
-                        output.files = [];
-
-                        for (var file in files) {
-
-                          output.files.push({
-                            name: files[file],
-                            directory: fs.statSync(home_directory + files[file]).isDirectory()
-                          })
-                        }
+                        output.getStaticData = getStaticData;
 
                         d1 = new Date();
 
-                        si.getStaticData(function(getStaticData) {
+                        var network_interfaces = os.networkInterfaces();
 
-                          console.log('getStaticData: ' + (((new Date()) - d1)/1000) + 'seconds');
+                        Object.keys(network_interfaces).forEach(function(interface) {
 
-                          output.getStaticData = getStaticData;
+                          var addresses = network_interfaces[interface];
 
-                          d1 = new Date();
+                          if(addresses) {
 
-                          var network_interfaces = os.networkInterfaces();
+                            addresses.forEach(function(address) {
 
-                          Object.keys(network_interfaces).forEach(function(interface) {
+                              address.networkAddress = ip.subnet(address.address, address.netmask);
 
-                            var addresses = network_interfaces[interface];
+                              address.subnetMaskLength = address.subnetMaskLength;
 
-                            if(addresses) {
-
-                              addresses.forEach(function(address) {
-
-                                address.networkAddress = ip.subnet(address.address, address.netmask);
-
-                                address.subnetMaskLength = address.subnetMaskLength;
-
-                                address.interfaceName = interface;
-                              });
-                            };
-                          });
-
-                          output.networkInterfaces = network_interfaces;
-
-                          console.log('systeminfo_output: ' + data);
-
-                          if(exports.socket){
-
-                            exports.socket.emit('systeminfo_output', output);
+                              address.interfaceName = interface;
+                            });
                           };
                         });
+
+                        output.networkInterfaces = network_interfaces;
+
+                        console.log('systeminfo_output: ' + data);
+
+                        if(exports.socket){
+
+                          exports.socket.emit('systeminfo_output', output);
+                        };
                       });
                     });
-                  // }); // docker
-                });
+                  });
+                // }); // docker
               });
             });
           });
