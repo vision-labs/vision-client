@@ -340,13 +340,20 @@ exports.connect = function(server, token) {
 
       if (!isDirectory) {
 
-        var fileContents = fs.readFileSync(file.data);
+        try {
 
-        var base64EncodedContent = new Buffer(fileContents).toString('base64');
+          var fileContents = fs.readFileSync(file.data);
 
-        // TODO: limit based on file size at some point
+          var base64EncodedContent = new Buffer(fileContents).toString('base64');
 
-        exports.socket.emit('action_output', JSON.stringify({action: 'command', data: base64EncodedContent}));
+          // TODO: limit based on file size at some point
+
+          exports.socket.emit('action_output', JSON.stringify({action: 'command', data: base64EncodedContent}));
+
+        catch(error) {
+
+          exports.socket.emit('action_output', JSON.stringify({action: 'command', data: data, error: error}));
+        }
       };
     }
     else if(action.action == 'delete_file') {
