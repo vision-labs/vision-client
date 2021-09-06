@@ -354,6 +354,7 @@ exports.connect = function(server, token) {
 
           exports.socket.emit('action_output', JSON.stringify({action: 'command', data: base64EncodedContent}));
 
+        }
         catch(error) {
 
           exports.socket.emit('action_output', JSON.stringify({action: 'command', data: data, error: error}));
