@@ -9,8 +9,9 @@
     "ip": "^1.1.5",
     "node-nmap": "^4.0.0",
     "shell-exec": "^1.0.2",
+    "shelljs": "^0.8.4",
     "socket.io-client": "^2.2.0",
-    "systeminformation": "^4.1.4"
+    "systeminformation": "^5.7.7"
   },
   "devDependencies": {},
   "scripts": {
