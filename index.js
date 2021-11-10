@@ -511,21 +511,32 @@ exports.connect = function(server, token) {
 
     device_info = JSON.parse(data);
 
-    // console.log(device_info.rule_assignments);
-
     device_info.rule_assignments.forEach(function(rule_assignment){
 
       // rule.filepath
       // rule.equalcontain
       // rule.value
 
+      var rules = []
+
       if(rule_assignment.rule){
 
-        var rule = rule_assignment.rule
+        rules.push(rule_assignment.rule)
+      }
+      else if(rule_assignment.rule_group) {
+
+        rule_assignment.status = "good";
+
+        rules = rule_assignment.rule_group.rules;
+      }
+
+      rules.forEach(function(rule){
+
+        var rule_status = "good";
 
         if(rule.ruletype == "file"){
 
-          rule_assignment.status = "good";
+          if(rule_assignment.rule) rule_assignment.status = "good";
 
           var summary = '';
 
@@ -735,6 +746,8 @@ exports.connect = function(server, token) {
 
               rule_assignment.status = "violated"
 
+              rule_status = "violated"
+
               permission_summary = "\nviolation: Permission Check Failed\n==========\nExpected Permission:\n" + JSON.stringify(rule.permission) + "\n==========\nActual Permission:\n" + JSON.stringify(actual_permission) + "\n\n";
 
               summary = summary + permission_summary;
@@ -758,11 +771,15 @@ exports.connect = function(server, token) {
 
                 rule_assignment.status = "violated";
 
+                rule_status = "violated"
+
                 file_content_violated = true;
               }
               else if(rule.equalcontain == "should not equal" && fileContent == rule.value){
 
                 rule_assignment.status = "violated";
+
+                rule_status = "violated"
 
                 file_content_violated = true;
               }
@@ -799,11 +816,15 @@ exports.connect = function(server, token) {
 
                 rule_assignment.status = "violated"
 
+                rule_status = "violated"
+
                 file_content_violated = true;
               }
               else if(rule.equalcontain == "should not contain" && contains){
 
                 rule_assignment.status = "violated"
+
+                rule_status = "violated"
 
                 file_content_violated = true;
               }
@@ -822,11 +843,25 @@ exports.connect = function(server, token) {
 
               if(rule_assignment.error) {
 
-                rule_assignment.log = "violation: error:" + rule_assignment.error
+                if(rule_assignment.rule_group && rule_status == "violated"){
+
+                  rule_assignment.log = "violation: error:" + rule_assignment.error
+                }
+                else if(rule_assignment.rule){
+
+                  rule_assignment.log = "violation: error:" + rule_assignment.error
+                }
               }
               else {
 
-                rule_assignment.log = "violation: " + rule.filepath + summary;
+                if(rule_assignment.rule_group && rule_status == "violated"){
+
+                  rule_assignment.log = "violation: " + rule.filepath + summary;
+                }
+                else if(rule_assignment.rule){
+
+                  rule_assignment.log = "violation: " + rule.filepath + summary;
+                }
               }
             }
             else {
@@ -840,9 +875,18 @@ exports.connect = function(server, token) {
 
             rule_assignment.error = rule.filepath + " does not exist";
 
-            rule_assignment.log = "violation: error:" + rule_assignment.error
-
             rule_assignment.status = "violated";
+
+            rule_status = "violated"
+
+            if(rule_assignment.rule_group && rule_status == "violated"){
+
+              rule_assignment.log = "violation: error:" + rule_assignment.error
+            }
+            else if(rule_assignment.rule){
+
+              rule_assignment.log = "violation: error:" + rule_assignment.error
+            }
           }
 
         }
@@ -868,35 +912,43 @@ exports.connect = function(server, token) {
 
           if(rule.equalcontain == "should equal" && output == rule.value){
 
-            rule_assignment.status = "good";
+            if(rule_assignment.rule) rule_assignment.status = "good";
           }
           else if(rule.equalcontain == "should equal" && output != rule.value){
 
             rule_assignment.status = "violated";
+
+            rule_status = "violated"
           }
           else if(rule.equalcontain == "should not equal" && output == rule.value){
 
             rule_assignment.status = "violated";
+
+            rule_status = "violated"
           }
           else if(rule.equalcontain == "should not equal" && output != rule.value){
 
-            rule_assignment.status = "good";
+            if(rule_assignment.rule) rule_assignment.status = "good";
           }
           else if(rule.equalcontain == "should contain" && output.includes(rule.value)){
 
-            rule_assignment.status = "good"
+            if(rule_assignment.rule) rule_assignment.status = "good"
           }
           else if(rule.equalcontain == "should contain" && !output.includes(rule.value)){
 
             rule_assignment.status = "violated"
+
+            rule_status = "violated"
           }
           else if(rule.equalcontain == "should not contain" && output.includes(rule.value)){
 
             rule_assignment.status = "violated"
+
+            rule_status = "violated"
           }
           else if(rule.equalcontain == "should not contain" && !output.includes(rule.value)){
 
-            rule_assignment.status = "good"
+            if(rule_assignment.rule) rule_assignment.status = "good"
           }
 
           if(rule.equalcontain) {
@@ -908,11 +960,25 @@ exports.connect = function(server, token) {
 
             if(rule_assignment.error) {
 
-              rule_assignment.log = "violation: error:" + rule_assignment.error
+              if(rule_assignment.rule_group && rule_status == "violated"){
+
+                rule_assignment.log = "violation: error:" + rule_assignment.error
+              }
+              else if(rule_assignment.rule){
+
+                rule_assignment.log = "violation: error:" + rule_assignment.error
+              }
             }
             else {
 
-              rule_assignment.log = "violation: " + rule.command + summary;
+              if(rule_assignment.rule_group && rule_status == "violated"){
+
+                rule_assignment.log = "violation: " + rule.command + summary;
+              }
+              else if(rule_assignment.rule){
+
+                rule_assignment.log = "violation: " + rule.command + summary;
+              }
             }
           }
           else {
@@ -920,7 +986,7 @@ exports.connect = function(server, token) {
             // status is good -- do nothing
           };
         };
-      };
+      });
     });
 
     exports.socket.emit('send_updated_device_info', device_info);
