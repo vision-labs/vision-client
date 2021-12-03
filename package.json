@@ -13,7 +13,6 @@
     "socket.io-client": "^2.2.0",
     "systeminformation": "^5.7.7"
   },
-  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

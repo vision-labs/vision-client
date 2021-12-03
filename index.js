@@ -6,8 +6,10 @@
 // ==
 // node index.js -t <device_token>
 // node index.js -u <user_token> -o <organization_token> -n <name> -d <device_type>
+process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = 0;
+// process.env.DEBUG="*"
 
-var cli_server = 'http://visionadministrator.com:3001'
+var cli_server = 'wss://visionadministrator.com'
 
 var si = require('systeminformation');
 
@@ -146,7 +148,14 @@ exports.connect = function(server, token) {
 
   console.log('running as root/admin? ' + exports.is_admin);
 
-  exports.socket = require('socket.io-client')(server);
+  exports.socket = require('socket.io-client')(server, {rejectUnauthorized: false});
+
+  exports.socket.on("connect_error", function(error){
+
+    console.log("websocket connect error "+error.description+" ("+error.type+")");
+
+    console.log(error);
+  });
 
   exports.socket.on('connect', function(){
 
